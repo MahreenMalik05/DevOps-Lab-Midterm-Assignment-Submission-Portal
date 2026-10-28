@@ -34,7 +34,13 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: 'test-report-raw.json',
+            script {
+                env.BUILD_STATUS = currentBuild.currentResult
+            }
+
+            bat 'node scripts/send-report.js'
+
+            archiveArtifacts artifacts: 'test-report-raw.json, test-report.json',
                              allowEmptyArchive: true
         }
     }
