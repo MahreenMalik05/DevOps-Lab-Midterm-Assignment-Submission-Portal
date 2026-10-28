@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assignment Submission Portal</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 30px 15px;
+      color: #1e293b;
+    }
+
+    .container {
+      max-width: 750px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px #00000012;
+    }
+
+    h1, h2 {
+      color: #1d4ed8;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px;
+      margin-top: 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 18px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .message {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .submission {
+      padding: 15px 0;
+      border-bottom: 1px solid #e2e8f0;
+      overflow-wrap: anywhere;
+    }
+
+    .submission:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Assignment Submission Portal</h1>
+      <p>Enter your details to submit an assignment.</p>
+
+      <form id="submissionForm">
+        <label for="name">Student Name</label>
+        <input id="name" name="name" required>
+
+        <label for="registrationNumber">Registration Number</label>
+        <input
+          id="registrationNumber"
+          name="registrationNumber"
+          required
+        >
+
+        <label for="assignmentTitle">Assignment Title</label>
+        <input
+          id="assignmentTitle"
+          name="assignmentTitle"
+          required
+        >
+
+        <label for="submissionUrl">Submission URL</label>
+        <input
+          id="submissionUrl"
+          name="submissionUrl"
+          type="url"
+          placeholder="https://example.com/assignment"
+          required
+        >
+
+        <button type="submit">Submit Assignment</button>
+      </form>
+
+      <p id="message" class="message" role="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>Submitted Assignments</h2>
+      <div id="submissionList">Loading submissions...</div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("submissionForm");
+    const message = document.getElementById("message");
+    const submissionList = document.getElementById("submissionList");
+
+    // Display saved submissions.
+    async function loadSubmissions() {
+      try {
+        const response = await fetch("/api/submissions");
+        const submissions = await response.json();
+
+        submissionList.replaceChildren();
+
+        if (submissions.length === 0) {
+          submissionList.textContent = "No assignments submitted yet.";
+          return;
+        }
+
+        submissions.forEach((submission) => {
+          const item = document.createElement("div");
+          item.className = "submission";
+
+          const details = document.createElement("p");
+          details.textContent =
+            `${submission.name} | ${submission.registrationNumber}`;
+
+          const title = document.createElement("p");
+          title.textContent = submission.assignmentTitle;
+
+          const link = document.createElement("a");
+          link.href = submission.submissionUrl;
+          link.textContent = "Open submission link";
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+
+          item.append(details, title, link);
+          submissionList.appendChild(item);
+        });
+      } catch {
+        submissionList.textContent =
+          "Could not load submissions. Please refresh the page.";
+      }
+    }
+
+    // Submit the form to the backend.
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      message.textContent = "Submitting...";
+
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      try {
+        const response = await fetch("/api/submissions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        message.textContent = result.message;
+
+        if (response.ok) {
+          message.style.color = "green";
+          form.reset();
+          await loadSubmissions();
+        } else {
+          message.style.color = "red";
+        }
+      } catch {
+        message.style.color = "red";
+        message.textContent =
+          "Could not connect to the server. Please try again.";
+      }
+    });
+
+    loadSubmissions();
+  </script>
+</body>
+</html>
